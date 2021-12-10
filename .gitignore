@@ -1,0 +1,11 @@
+*.zip
+
+.idea/
+
+#ignore pdf files
+*.pdf
+
+#training data
+Images/
+logs/
+Trained_model/
