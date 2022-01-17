@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import datetime
 
 # training parameters
-batch_size = 50
+batch_size = 70
 epochs = 40
 IMG_HEIGHT = 256
 IMG_WIDTH = 256
