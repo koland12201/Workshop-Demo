@@ -1,30 +1,25 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import datetime
-import os
 
 # training parameters
-batch_size = 300
-epochs = 1
+batch_size = 50
+epochs = 40
 IMG_HEIGHT = 256
 IMG_WIDTH = 256
 
 
-
-#os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-
 # print number of available GPUs (optional)
+# os.environ['CUDA_VISIBLE_DEVICES'] = '-1' # uncomment if you wish to remain training on CPU
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 
 # configure training progress logging for tensorboard (optional)
+# to visualize training data, do "tensorboard --logdir logs" and open "http://localhost:6006/"
 log_dir = "logs\\" + datetime.datetime.now().strftime("%Y %m %d-%H %M %S")
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
 # import training data
 train_dir = "Images"
-#train_dir="test"
-#pass_dir = os.path.join(train_dir, 'Pass')
-#fail_dir = os.path.join(train_dir, 'Fail')
 
 # configure image generator with augmentation parameters
 train_image_generator = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255,
@@ -34,16 +29,24 @@ train_image_generator = tf.keras.preprocessing.image.ImageDataGenerator(rescale=
                                            shear_range=0.03,
                                            width_shift_range=0.05,
                                            height_shift_range=0.05,
-                                           zoom_range=0.03)
+                                           zoom_range=0.03,
+                                           validation_split=0.05)
 
 
 # Import image to generator
 train_data_gen = train_image_generator.flow_from_directory(batch_size=batch_size,
                                                            directory=train_dir,
                                                            shuffle=True,
-                                                           target_size=(IMG_HEIGHT, IMG_WIDTH),
-                                                           class_mode='binary')
+                                                           target_size=(IMG_HEIGHT,IMG_WIDTH),
+                                                           class_mode='binary',
+                                                           subset='training')
 
+# validation gen
+validation_data_gen = train_image_generator.flow_from_directory(batch_size=batch_size,
+                                                                 directory=train_dir,
+                                                                 target_size=(IMG_HEIGHT, IMG_WIDTH),
+                                                                 class_mode='binary',
+                                                                 subset='validation')
 
 # Randomly select 5 images to plot (optional)
 def plotimages(images_arr):
@@ -97,7 +100,13 @@ model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=Tru
 model.summary()
 
 # Start training
-model.fit(train_data_gen, epochs=epochs, verbose=1, shuffle=1, callbacks=[tensorboard])
+model.fit(train_data_gen,
+          validation_data=validation_data_gen,
+          epochs=epochs,
+          verbose=1,
+          shuffle=1,
+          callbacks=[tensorboard])
 
 # Save trained model
 model.save('Trained_model/model')
+print("Model Saved!")
